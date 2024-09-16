@@ -1,0 +1,20 @@
+working
+
+prompt and answer
+restore 
+file name 
+submit system
+clear
+save 
+
+
+not working
+
+save System  
+chat design    ./
+chat in limited area and scrolable  ./
+typing gif    
+side bar toogle
+
+check the new URL in postman 
+notarized for big screensmm
