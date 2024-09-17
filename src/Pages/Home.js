@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import {
     Dropdown,
     DropdownToggle,
@@ -14,11 +14,12 @@ import {
 } from 'reactstrap';
 import './home.css'
 
-const BASE_URL = "https://tarun.whatzz.app";
+const BASE_URL = "http://localhost:8999";
 
     // http://localhost:8999
+    //https://tarun.whatzz.app
 
-
+    //when any chat is clicked the file name is set to the chat name
 
 
     function Home() {
@@ -31,7 +32,7 @@ const BASE_URL = "https://tarun.whatzz.app";
     const [system, setSystem] = useState('');  // Holds system data
     const [saveStatus, setSaveStatus] = useState('');  // Save status
     const [suffix, setSuffix] = useState('');
-
+    const lastRowRef = useRef(null);
     const [dropdownOpen, setDropdownOpen] = useState(false);
 
     const toggle = () => setDropdownOpen(!dropdownOpen);
@@ -43,45 +44,58 @@ const BASE_URL = "https://tarun.whatzz.app";
     const [modal, setModal] = useState(false);
     const [modal2, setModal2] = useState(false);
 
+    
+
 
     useEffect(() => {
         updateTable();
         updateStored();
 
+      const input = document.getElementById("prompt");
+      const button = document.getElementById("submit_prompt");
 
-        const input = document.getElementById("prompt");
-        const button = document.getElementById("submit_prompt");
+      // Add event listener for Enter key
+      const handleEnterKey = (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          button.click();
+        }
+      };
 
-  // Add event listener for Enter key
-  const handleEnterKey = (event) => {
-    if (event.key === "Enter") {
-      event.preventDefault();
-      button.click();
-    }
-  };
+      input.addEventListener("keydown", handleEnterKey);
 
-  input.addEventListener("keydown", handleEnterKey);
+      return () => {
+        input.removeEventListener("keydown", handleEnterKey);
+      };
 
-  return () => {
-    input.removeEventListener("keydown", handleEnterKey);
-  };
-    }, []);
+
+    }, [completion]);
 
     const updateTable = () => {
       fetch(`${BASE_URL}/getAll`)
         .then(response => response.json())
         .then(data => {
           console.log(data);
+          
           const formattedData = data.data.map((item, index) => {
             // Determine if the current index is left or right aligned
             const isLeft = index === 0 || index % 2 === 1; // First, second, fourth, etc. are on the left
     
             // Assign design based on the index
             const isPrimaryDesign = index === 0 || index % 2 === 0; // 1st, 2nd, 4th have the same design
-            
+    
+            if (index === 0) {
+              setSystem(item.content);
+              console.log(item.content);
+            }
+    
+            // Add a ref to the last row
+            const isLastRow = index === data.data.length - 1;
+    
             return (
               <tr
                 key={index}
+                ref={isLastRow ? lastRowRef : null} // Set the ref on the last row
                 className={`max-w-[60%] ${isLeft ? 'self-end' : 'self-start'}`}  // Alternates alignment
               >
                 <td
@@ -95,7 +109,15 @@ const BASE_URL = "https://tarun.whatzz.app";
               </tr>
             );
           });
+    
           setTableData(formattedData);
+    
+          // Scroll to the last row after the table is updated
+          setTimeout(() => {
+            if (lastRowRef.current) {
+              lastRowRef.current.scrollIntoView({ behavior: 'smooth' });
+            }
+          }, 0); // Small delay to ensure DOM updates
         });
     };
     
@@ -184,46 +206,54 @@ const BASE_URL = "https://tarun.whatzz.app";
 
     // /*
 
+    function resetAll() {
+      fetch(`${BASE_URL}/clear`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      })
+        .then(response => response.json())
+        .then(data => {
+          console.log(data.status);
+          document.getElementById('save_status').innerHTML = `Upload Status ${data.status}`;
+          updateTable();
+        });
+    }
+
+    function restore(suffix) {
+      console.log(suffix);
+    
+      if (checkSuffix(suffix)) return;
+
+      setSuffix(suffix);
+      
+      fetch(`${BASE_URL}/restore`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ suffix }),
+      }).then(() => {
+        const date = new Date();
+        setSaveStatus('Restored - ' + date.toLocaleTimeString());  // Update the save status
+        updateTable();
+      });
+    }
+
+
+
     const saveSystem = () => {
       resetAll();
       submitSystem();
-      save();
-      restore();
+      save(suffix);
+      restore(suffix);
     };
 
-    function resetAll() {
-        fetch(`${BASE_URL}/clear`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({}),
-        })
-          .then(response => response.json())
-          .then(data => {
-            console.log(data.status);
-            document.getElementById('save_status').innerHTML = `Upload Status ${data.status}`;
-            updateTable();
-          });
-      }
+    
 
-      function restore(suffix) {
-        console.log(suffix);
       
-        if (checkSuffix(suffix)) return;
-      
-        fetch(`${BASE_URL}/restore`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ suffix }),
-        }).then(() => {
-          const date = new Date();
-          setSaveStatus('Restored - ' + date.toLocaleTimeString());  // Update the save status
-          updateTable();
-        });
-      }
 
 
 /*************************** */      
@@ -308,9 +338,11 @@ const save = () => {
       }
 
       const submitPrompt = () => {
-        const promptValue = document.getElementById('prompt').value; // Get value from the existing input
-        setCompletion('<img src="loading.gif" alt="loading"/>'); // Set loading state
-    
+        const promptInput = document.getElementById('prompt'); // Get the input element
+        const promptValue = promptInput.value;
+        console.log(promptValue);
+        setCompletion('<iframe src="https://giphy.com/embed/ycfHiJV6WZnQDFjSWH" width="480" height="480" style="" frameBorder="0" class="giphy-embed" allowFullScreen></iframe><p><a href="https://giphy.com/gifs/waiting-loading-load-ycfHiJV6WZnQDFjSWH">via GIPHY</a></p>'); // Set loading state
+      
         fetch(`${BASE_URL}/submitPrompt`, {
           method: 'POST',
           headers: {
@@ -322,6 +354,7 @@ const save = () => {
           .then((data) => {
             console.log('Completion:', data.completion);
             setCompletion(convertString(data.completion)); // Update the completion text
+            promptInput.value = ""; 
             updateTable(); // Update table or other UI elements
           })
           .catch((error) => {
@@ -613,7 +646,7 @@ const save = () => {
                                 <DropdownItem className="text-center">
                                     <button
                                         className="text-zinc-200 bg-transparent border-none w-full text-center hover:bg-zinc-700 hover:text-zinc-700 py-2"
-                                        onClick={saveSystem}
+                                        onClick={() => save()}
                                         style={{
                                             backgroundColor: 'transparent',
                                             border: 'none',
@@ -646,9 +679,10 @@ const save = () => {
                 <div className="h-3/4 chat  overflow-y-scroll no-scrollbar mb-8" id="table">
                   <table className="table-auto w-full flex flex-col gap-8 px-[60px] ">
                       {tableData}
-                  </table>
+                </table>
+                      <div className="hidden" dangerouslySetInnerHTML={{ __html: completion }} />
                 </div>
-
+                        
                 <div className="flex items-center justify-center gap-2 ">
                     <Input
                         className="mb-3 w-1/12 bg-zinc-600 text-zinc-200"
