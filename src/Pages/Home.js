@@ -14,7 +14,7 @@ import {
 } from 'reactstrap';
 import './home.css'
 
-const BASE_URL = "http://localhost:8999";
+const BASE_URL = "https://tarun.whatzz.app";
 
     // http://localhost:8999
     //https://tarun.whatzz.app
