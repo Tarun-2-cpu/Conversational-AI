@@ -883,7 +883,7 @@ function Home() {
 
 
           </div>
-          <button className="h-fit w-full flex items-center py-2 px-3 cursor-pointer hover:bg-slate-600 border-b-2 border-slate-500" onClick={toggle4}>
+          <button className="h-fit w-full flex items-center py-2 px-3 cursor-pointer hover:bg-slate-600 border-b-2 border-slate-500">
               <Form className="flex w-full gap-2 justify-between items-center cursor-pointer" inline onSubmit={(e) => e.preventDefault()}>
                   <div className="flex items-center justify-between gap-2">
                       <i className="ri-openai-line text-slate-300 xl:text-xl 2xl:text-2xl"></i>
@@ -1039,7 +1039,7 @@ function Home() {
       </div>
       <div className="w-4/5 bg-zinc-700 h-screen">
           <div className="h-fit flex justify-between items-center px-5 xl:py-3 2xl:py-4">
-              <button className="flex w-fit gap-2 items-center cursor-pointer" onClick={toggle3}>
+              <button className="flex w-fit gap-2 items-center cursor-pointer">
                   <Form className="flex w-fit gap-2 items-center cursor-pointer" inline onSubmit={(e) => e.preventDefault()}>
                       <p className="text-slate-300 xl:text-2xl 2xl:text-3xl font-bold	">Conversational AI</p>
                       <i className="ri-arrow-down-s-line xl:text-xl 2xl:text-2xl text-slate-300"></i>
