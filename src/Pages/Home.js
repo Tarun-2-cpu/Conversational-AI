@@ -41,12 +41,15 @@ function Home() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [drop, setDrop] = useState(false); // State to track which folder's dropdown is open
   // const [openDropdown, setOpenDropdown] = useState(null); // Track which dropdown is open
-
   const [isSubmitting, setIsSubmitting] = useState(false); // New state variable
+  const[selectedFolder,setSelectedFolder] = useState(null)
+  const [chatMessages, setChatMessages] = useState([]); // Array of all chat messages (prompt + response)
+  const [suffixError,setSuffixError] = useState('')
+  const [systemError,setSystemError] = useState('')
+  const [promptError,setPromptError] = useState('')
 
 
   const toggle = () => setDropdownOpen(!dropdownOpen);
-
   // const [dropdown2Open, setDropdown2Open] = useState(false);
 
   // const toggle2 = () => setDropdown2Open(!dropdown2Open);
@@ -58,6 +61,8 @@ function Home() {
 
 
   useEffect(() => {
+    console.log("Selected Folder Updated:", selectedFolder);
+
     updateTable();
     updateStored();
 
@@ -77,75 +82,95 @@ function Home() {
     return () => {
       input.removeEventListener("keydown", handleEnterKey);
     };
-  }, [completion, refreshKey, isSubmitting ]);
+  }, [completion, refreshKey, isSubmitting, selectedFolder,tableData ]);
+
+  // real
 
   // const updateTable = () => {
   //   fetch(`${BASE_URL}/getAll`)
-  //     .then(response => response.json())
-  //     .then(data => {
+  //     .then((response) => response.json())
+  //     .then((data) => {
   //       console.log(data);
+  
+  //       // Extract the system message (index 0) and the rest of the messages
+  //       const systemMessage = data.data[0];
+  //       const chatMessages = data.data.slice(1);
         
-  //       const formattedData = data.data.map((item, index) => {
-  //         // Determine if the current index is left or right aligned
-  //         const isLeft = index === 0 || index % 2 === 1; // First, second, fourth, etc. are on the left
+  //       setSystem(systemMessage.content);
+
+  //       // Create system message as a fixed/sticky element
+  //       const systemMessageElement = (
+  //         <tr
+  //           key="system"
+  //           className="sticky top-0 flex justify-end p-0 text-right bg-[#3f3f46] z-50 w-full pb-3 border-b-[1px] " // Sticky and always at the top
+  //          >
+  //          {/* bg-[#3f3f46] */}
+  //           <td
+  //             className="relative px-4 flex items-center justify-normal gap-3 mt-0 mb-0 xl:text-base 2xl:text-xl text-[white] text-left font-semibold"
+  //           >
+  //             Role Description:
+  //             <div
+  //               dangerouslySetInnerHTML={{
+  //                 __html: systemMessage.content.replace(/\n/g, "<br>"),
+  //               }}
+  //             />
+  //             <button
+  //               className="absolute top-0 right-[-20px] px-2 xl:text-lg 2xl:text-xl bg-transparent border-none cursor-pointer"
+  //               onClick={toggle3}
+  //               style={{ marginLeft: "8px", color: "white"}}
+  //             >
+  //               &#x270F; {/* Vertical ellipsis (gear) */}
+  //             </button>
+  //           </td>
+  //         </tr>
+  //       );
   
-  //         // Assign design based on the index
-  //         const isPrimaryDesign = index === 0 || index % 2 === 0; // 1st, 2nd, 4th have the same design
-  
-  //         if (index === 0) {
-  //           setSystem(item.content);
-  //           console.log(item.content);
-  //         }
+  //       // Render chat messages
+  //       const chatMessageElements = chatMessages.map((item, index) => {
+  //         const isLeft = index % 2 === 0; // Alternate alignment
+  //         const isPrimaryDesign = index % 2 === 0;
   
   //         // Add a ref to the last row
-  //         const isLastRow = index === data.data.length - 1;
+  //         const isLastRow = index === chatMessages.length - 1;
   
   //         return (
   //           <tr
   //             key={index}
-  //             ref={isLastRow ? lastRowRef : null} // Set the ref on the last row
-  //             className={`max-w-[60%] ${isLeft ? 'self-end' : 'self-start'}`}  // Alternates alignment
+  //             ref={isLastRow ? lastRowRef : null} // Attach ref to the last row
+  //             className={`max-w-[60%] ${
+  //               isLeft ? "self-end" : "self-start"
+  //             }`} // Alternates alignment
   //           >
   //             <td
-  //               className={`relative p-4 mt-4 mb-4 rounded-[20px] text-xl ${
+  //               className={`relative xl:p-4 xl:py-3 2xl:p-4 mt-4 mb-4 rounded-[20px] xl:text-lg 2xl:text-xl ${
   //                 isPrimaryDesign
-  //                   ? 'bg-slate-300 text-[#212121]  shadow-md shadow-black'  // Design for 1st, 2nd, 4th
-  //                   : 'bg-black text-slate-300  shadow-md shadow-slate-300' // Design for 3rd, 5th, 7th
-  //               } ${isLeft ? 'text-left italic'  : 'text-left font-semibold'}`}
-  //               >
-  //                 <div
-  //               dangerouslySetInnerHTML={{ __html: item.content.replace(/\n/g, '<br>') }}
-  //             />
-  //             {/* Add three dots for index 0 */}
-  //             {index === 0 && (
-  //               <button
-  //                 className="absolute top-2 right-[-25px] p-2 text-xl bg-transparent border-none cursor-pointer"
-  //                 onClick={toggle3}
-  //                 style={{ marginLeft: '8px', color: 'white', fontSize:'25px' }} // Add margin for spacing
-  //               >
-  //                 &#x22EE; {/* Vertical ellipsis (three dots) */}
-  //               </button>
-  //             )}
-  //           </td>
+  //                   ? "bg-slate-300 text-[#212121] shadow-[0px_54px_20px_rgba(0,0,0,0.3)] rounded-[20px]"
+  //                   : "bg-black text-slate-300 shadow-[0px_54px_20px_rgba(0,0,0,0.3)] rounded-[20px]"
+  //               } ${isLeft ? "text-left italic" : "text-left font-semibold"}`}
+  //             >
+  //               <div
+  //                 dangerouslySetInnerHTML={{
+  //                   __html: item.content.replace(/\n/g, "<br>"),
+  //                 }}
+  //               />
+  //             </td>
   //           </tr>
   //         );
   //       });
   
-  //       setTableData(formattedData);
-        
+  //       // Combine the system message and chat messages
+  //       setTableData([systemMessageElement, ...chatMessageElements]);
+  
   //       // Scroll to the last row after the table is updated
   //       setTimeout(() => {
   //         if (lastRowRef.current) {
-  //           lastRowRef.current.scrollIntoView({ behavior: 'smooth' });
+  //           lastRowRef.current.scrollIntoView({ behavior: "smooth" });
   //         }
-  //       }, 0); // Small delay to ensure DOM updates
-
-  //       // setRefreshKey((prevKey) => prevKey + 1);
+  //       }, 100); // Small delay to ensure DOM updates
   //     });
   // };
   
-  
-  // messages
+  // trying
 
   const updateTable = () => {
     fetch(`${BASE_URL}/getAll`)
@@ -195,6 +220,7 @@ function Home() {
           const isLastRow = index === chatMessages.length - 1;
   
           return (
+
             <tr
               key={index}
               ref={isLastRow ? lastRowRef : null} // Attach ref to the last row
@@ -231,7 +257,6 @@ function Home() {
       });
   };
   
-  
 
   /******************************************************************************************** */
   // const toggleDropdown = (index) => {
@@ -241,111 +266,164 @@ function Home() {
   // };
       
 
-  // chats
+  // chats (use this)
 
-  const updateStored = () => {
-    fetch(`${BASE_URL}/getStored`)
-      .then((response) => response.json())
-      .then((data) => {
-        console.log(data.dir);
+  // const updateStored = () => {
+  //   fetch(`${BASE_URL}/getStored`)
+  //     .then((response) => response.json())
+  //     .then((data) => {
+  //       console.log(data.dir);
 
-        const links = data.dir.map((folder, index) => (
-          <div
-            key={index}
-             // Restore functionality on folder click
-            className="h-fit flex items-center justify-between   px-3 xl:mt-2 2xl:mt-3 cursor-pointer hover:bg-slate-600 rounded-lg relative" // Added "relative" for positioning the dropdown
-          >
-            <div className="flex items-center justify-between gap-2 py-2 w-full" onClick={() => submitStored(folder)}>
-              <div className="text-slate-300 xl:text-lg 2xl:text-xl font-semibold border-none text-left w-full">
-                {folder}
-              </div>
-            </div>
+  //       const links = data.dir.map((folder, index) => (
+  //         <div
+  //           key={index}
+  //            // Restore functionality on folder click
+  //           className="h-fit flex items-center justify-between   px-3 xl:mt-2 2xl:mt-3 cursor-pointer hover:bg-slate-600 rounded-lg relative" // Added "relative" for positioning the dropdown
+  //         >
+  //           <div className="flex items-center justify-between gap-2 py-2 w-full" 
+  //             onClick={() => {
+  //                 submitStored(folder)}
+  //             }>
+  //               <div className="text-slate-300 xl:text-lg 2xl:text-xl font-semibold border-none text-left w-full">
+  //                 {folder}
+  //               </div>
+  //           </div>
         
-            {/* Button with save icon that toggles the dropdown */}
-            <button
-              className="text-zinc-200 bg-transparent border-none w-fit text-center hover:bg-zinc-700 hover:text-zinc-700 py-2 "
-              style={{
-                backgroundColor: 'transparent',
-                border: 'none',
-              }}
-              type="button"
-              title="Save"
-              onClick={()=> {
-                // setSuffix(folder);
-                // save();
-              }}
-            >
-              <SaveAltIcon className="ri-save-line  text-slate-300 xl:text-lg hover:xl:text-2xl 2xl:text-xl hover:2xl:text-3xl hover:h-7 hover:w-7" />
-            </button>
-          </div>
-        ));
+  //           {/* Button with save icon that toggles the dropdown */}
+  //           <button
+  //             className="text-zinc-200 bg-transparent border-none w-fit text-center hover:bg-zinc-700 hover:text-zinc-700 py-2 "
+  //             style={{
+  //               backgroundColor: 'transparent',
+  //               border: 'none',
+  //             }}
+  //             type="button"
+  //             title="Save"
+  //             onClick={()=> saveFolder(folder)}
+  //           >
+  //             <SaveAltIcon className="ri-save-line  text-slate-300 xl:text-lg hover:xl:text-2xl 2xl:text-xl hover:2xl:text-3xl hover:h-7 hover:w-7" />
+  //           </button>
+  //         </div>
+  //       ));
         
   
-        // const links = data.dir.map((folder, index) => (
-        //   <div
-        //     key={index}
-        //     onClick={() => submitStored(folder)}
-        //     className="h-fit flex items-center justify-between py-2 px-3 mt-3 cursor-pointer hover:bg-slate-600 rounded-lg"
-        //   >
-        //     <div className=" flex items-center justify-between gap-2">
-        //       <button  className="text-slate-300  text-xl font-semibold border-none text-center w-full">{folder}</button>
-        //     </div>
+  //       // const links = data.dir.map((folder, index) => (
+  //       //   <div
+  //       //     key={index}
+  //       //     onClick={() => submitStored(folder)}
+  //       //     className="h-fit flex items-center justify-between py-2 px-3 mt-3 cursor-pointer hover:bg-slate-600 rounded-lg"
+  //       //   >
+  //       //     <div className=" flex items-center justify-between gap-2">
+  //       //       <button  className="text-slate-300  text-xl font-semibold border-none text-center w-full">{folder}</button>
+  //       //     </div>
   
-        //     {/* Button with quill icon that triggers submitStored on click */}
-        //     <button
-        //       className="text-zinc-200 bg-transparent border-none w-fit text-center hover:bg-zinc-700 hover:text-zinc-700 py-2"
-        //       onClick={(e) => {
-        //         e.stopPropagation(); // Prevent the folder click handler from triggering
-        //         // alert(`Dropdown for ${folder} opened!`); // Alert when dropdown is opened
-        //         setDrop((prev) => (prev === folder ? null : folder)); // Toggle dropdown for this folder
-        //       }}
-        //       style={{
-        //         backgroundColor: 'transparent',
-        //         border: 'none',
-        //       }}
-        //       type="button"
-        //       value="RESTORE"
-        //     >
-        //       <i className="ri-quill-pen-line text-slate-300 text-xl hover:text-3xl"></i>
-        //     </button>
+  //       //     {/* Button with quill icon that triggers submitStored on click */}
+  //       //     <button
+  //       //       className="text-zinc-200 bg-transparent border-none w-fit text-center hover:bg-zinc-700 hover:text-zinc-700 py-2"
+  //       //       onClick={(e) => {
+  //       //         e.stopPropagation(); // Prevent the folder click handler from triggering
+  //       //         // alert(`Dropdown for ${folder} opened!`); // Alert when dropdown is opened
+  //       //         setDrop((prev) => (prev === folder ? null : folder)); // Toggle dropdown for this folder
+  //       //       }}
+  //       //       style={{
+  //       //         backgroundColor: 'transparent',
+  //       //         border: 'none',
+  //       //       }}
+  //       //       type="button"
+  //       //       value="RESTORE"
+  //       //     >
+  //       //       <i className="ri-quill-pen-line text-slate-300 text-xl hover:text-3xl"></i>
+  //       //     </button>
 
-        //        {/* Dropdown Menu */}
-        //     {drop === folder && (
-        //         <div
-        //         className="absolute right-0 bg-white shadow-md border rounded mt-2 z-10"
-        //         style={{ zIndex: 100, minWidth: '150px' }}
-        //       >
-        //         <ul className="py-1">
-        //           <li
-        //             className="px-4 py-2 hover:bg-zinc-200 cursor-pointer"
-        //             onClick={() => {
-        //               alert(`Renaming: ${folder}`); // Placeholder for Rename
-        //               setDrop(null); // Close dropdown
-        //             }}
-        //           >
-        //             Rename
-        //           </li>
-        //           <li
-        //             className="px-4 py-2 hover:bg-zinc-200 cursor-pointer"
-        //             onClick={() => {
-        //               alert(`Deleted: ${folder}`); // Placeholder for Delete
-        //               setDrop(null); // Close dropdown
-        //             }}
-        //           >
-        //             Delete
-        //           </li>
-        //         </ul>
-        //       </div>
-        //     )}
+  //       //        {/* Dropdown Menu */}
+  //       //     {drop === folder && (
+  //       //         <div
+  //       //         className="absolute right-0 bg-white shadow-md border rounded mt-2 z-10"
+  //       //         style={{ zIndex: 100, minWidth: '150px' }}
+  //       //       >
+  //       //         <ul className="py-1">
+  //       //           <li
+  //       //             className="px-4 py-2 hover:bg-zinc-200 cursor-pointer"
+  //       //             onClick={() => {
+  //       //               alert(`Renaming: ${folder}`); // Placeholder for Rename
+  //       //               setDrop(null); // Close dropdown
+  //       //             }}
+  //       //           >
+  //       //             Rename
+  //       //           </li>
+  //       //           <li
+  //       //             className="px-4 py-2 hover:bg-zinc-200 cursor-pointer"
+  //       //             onClick={() => {
+  //       //               alert(`Deleted: ${folder}`); // Placeholder for Delete
+  //       //               setDrop(null); // Close dropdown
+  //       //             }}
+  //       //           >
+  //       //             Delete
+  //       //           </li>
+  //       //         </ul>
+  //       //       </div>
+  //       //     )}
               
 
 
-        //   </div>
-        // ));
+  //       //   </div>
+  //       // ));
   
-        setStoredLinks(links);
-      });
+  //       setStoredLinks(links);
+  //     });
+  // };
+
+
+  // (trail)
+
+    const updateStored = () => {
+      fetch(`${BASE_URL}/getStored`)
+        .then((response) => response.json())
+        .then((data) => {
+          console.log(data.dir);
+
+          const links = data.dir.map((folder, index) => (
+            <div
+          key={index}
+          className={`h-fit flex items-center justify-between px-3 xl:mt-2 2xl:mt-3 cursor-pointer rounded-lg relative ${
+            selectedFolder === folder ? 'bg-slate-700' : 'hover:bg-slate-600'
+          }`} 
+          onClick={() => {
+            console.log("Clicked Folder:", folder);
+            setSelectedFolder(folder);
+            submitStored(folder);
+          }}
+        >
+          <div className="flex items-center justify-between gap-2 py-2 w-full">
+            <div className="text-slate-300 xl:text-lg 2xl:text-xl font-semibold border-none text-left w-full">
+              {folder}
+            </div>
+          </div>
+
+              {/* Save button */}
+              <button
+                className="text-zinc-200 bg-transparent border-none w-fit text-center hover:bg-zinc-700 hover:text-zinc-700 py-2"
+                style={{
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                }}
+                type="button"
+                title="Save"
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent triggering folder click
+                  saveFolder(folder); // Save functionality
+                }}
+              >
+                <SaveAltIcon className="ri-save-line text-slate-300 xl:text-lg hover:xl:text-2xl 2xl:text-xl hover:2xl:text-3xl hover:h-7 hover:w-7" />
+              </button>
+            </div>
+          ));
+
+          setStoredLinks(links);
+        });
   };
+
+
+
       
 
   // const updateStored = () => {
@@ -379,6 +457,8 @@ function Home() {
   
   function submitStored(folder) {
     // Handle state instead of direct DOM manipulation
+    const fold = folder  
+
     setSuffix(folder);
     restore(folder);
     
@@ -421,17 +501,16 @@ function Home() {
         console.log(data.status);
         document.getElementById('save_status').innerHTML = `Upload Status ${data.status}`;
         updateTable();
-        Swal.fire({
-          title: "Success",
-          text: "Chat cleared successfully!",
-          icon: "success"
-        });
+        // Swal.fire({
+        //   title: "Success",
+        //   text: "Chat cleared successfully!",
+        //   icon: "success"
+        // });
       });
   }
 
   function restore(suffix) {
-    console.log(suffix);
-  
+    
     if (checkSuffix(suffix)) return;
 
     setSuffix(suffix);
@@ -485,18 +564,14 @@ function Home() {
     
   function checkSuffix(suffix) {
     if (!suffix) {
-      Swal.fire({
-        title: "Error",
-        text: "Need Proper Suffix / Fine-Tune Name to proceed!",
-        icon: "error"
-      });
+      setSuffixError("Need Proper Suffix / Fine-Tune Name to proceed!");
       setModal2(true);
       return true;
     }
+    setSuffixError(""); // Clear any previous error message
     return false;
   }
       
-
   const save = () => {
     if (checkSuffix(suffix)) return;
 
@@ -509,11 +584,10 @@ function Home() {
     }).then(() => {
       const date = new Date();
       setSaveStatus(`Saved - ${date.toLocaleTimeString()}`);
-      Swal.fire({
-        title: "Saved",
-        text: "Chat saved successfully!",
-        icon: "success"
-      });
+      setSuffixError(""); // Clear any error messages upon successful save
+    })
+    .catch(() => {
+      setSuffixError("Failed to save. Please try again.");
     });
 
     // toggle4()
@@ -522,6 +596,28 @@ function Home() {
     }
     setRefreshKey((prevKey) => prevKey + 1);
   };
+
+  function saveFolder(folder){
+      setSuffix(folder);
+      if(selectedFolder === folder){
+        fetch(`${BASE_URL}/save`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+            body: JSON.stringify({ suffix }), // No need to use getElementById anymore
+          }).then(() => {
+            const date = new Date();
+            setSaveStatus(`Saved - ${date.toLocaleTimeString()}`);
+          });
+      }
+
+    // toggle4()
+    if(modal2){
+      setModal2(false);
+    }
+    setRefreshKey((prevKey) => prevKey + 1);
+  }
 
   const toggle3 = () => setModal(!modal);
   
@@ -538,13 +634,10 @@ function Home() {
   function submitSystem() {
 
     if(!system){
-      Swal.fire({
-        title: "Error",
-        text: "Please give system message!",
-        icon: "error"
-      });
+      setSystemError("Please give system message!")
     }
     else{
+      setSystemError("");
       fetch(`${BASE_URL}/submitSystem`, {
         method: 'POST',
         headers: {
@@ -557,15 +650,17 @@ function Home() {
         setRefreshKey((prevKey) => prevKey + 1);
         setModal(false);
         save();
-        Swal.fire({
-        title: "Success",
-        text: "System message updated!",
-        icon: "success"
-      });
+        // Swal.fire({
+        //   title: "Success",
+        //   text: "System message updated!",
+        //   icon: "success"
+        // });
       });
     }
 
   }
+
+  //trial
 
   const submitPrompt = () => {
     const promptInput = document.getElementById('prompt'); // Get the input element
@@ -574,16 +669,34 @@ function Home() {
     setCompletion('<iframe src="https://giphy.com/embed/ycfHiJV6WZnQDFjSWH" width="480" height="480" style="" frameBorder="0" class="giphy-embed" allowFullScreen></iframe><p><a href="https://giphy.com/gifs/waiting-loading-load-ycfHiJV6WZnQDFjSWH">via GIPHY</a></p>'); // Set loading state
     
     if(!promptValue){
-      Swal.fire({
-        title: "Error",
-        text: "Please give proper prompt!",
-        icon: "error"
-      });
+      setPromptError("Please give proper prompt!")
       return;
     }
+    setPromptError("");
 
   setIsSubmitting(true); // Disable the button and Enter key
   console.log(promptValue);
+  promptInput.value = "";
+
+   // Add the user's prompt to the chat immediately
+   setTableData((prevTableData) => [
+    ...prevTableData,
+    <tr key={prevTableData.length} className="max-w-[60%] self-start">
+      <td className="relative xl:p-4 xl:py-3 2xl:p-4 mt-4 mb-4 rounded-[20px] bg-black text-slate-300 shadow-[0px_54px_20px_rgba(0,0,0,0.3)] rounded-[20px] text-left font-semibold">
+        <div
+          dangerouslySetInnerHTML={{
+            __html: promptValue.replace(/\n/g, "<br>"),
+          }}
+        />
+      </td>
+    </tr>,
+  ]);
+
+
+
+
+
+
   setCompletion(
     '<iframe src="https://giphy.com/embed/ycfHiJV6WZnQDFjSWH" width="480" height="480" style="" frameBorder="0" class="giphy-embed" allowFullScreen></iframe><p><a href="https://giphy.com/gifs/waiting-loading-load-ycfHiJV6WZnQDFjSWH">via GIPHY</a></p>'
   ); // Set loading state
@@ -599,8 +712,21 @@ function Home() {
       .then((response) => response.json())
       .then((data) => {
         console.log('Completion:', data.completion);
+        
+         // Add the completion response to the chat
+        setTableData((prevTableData) => [
+          ...prevTableData,
+          <tr key={prevTableData.length + 1} className="max-w-[60%] self-end">
+            <td className="relative xl:p-4 xl:py-3 2xl:p-4 mt-4 mb-4 rounded-[20px] bg-slate-300 text-[#212121] shadow-[0px_54px_20px_rgba(0,0,0,0.3)] rounded-[20px] text-left italic">
+              <div
+                dangerouslySetInnerHTML={{
+                  __html: convertString(data.completion).replace(/\n/g, "<br>"),
+                }}
+              />
+            </td>
+          </tr>,
+        ]);
         setCompletion(convertString(data.completion)); // Update the completion text
-        promptInput.value = ""; 
         updateTable(); // Update table or other UI elements
       })
       .catch((error) => {
@@ -611,6 +737,55 @@ function Home() {
         setIsSubmitting(false); // Re-enable the button and Enter key
       });
   };
+  
+  
+
+  //real
+
+  // const submitPrompt = () => {
+  //   const promptInput = document.getElementById('prompt'); // Get the input element
+  //   const promptValue = promptInput.value;
+  //   console.log(promptValue);
+  //   setCompletion('<iframe src="https://giphy.com/embed/ycfHiJV6WZnQDFjSWH" width="480" height="480" style="" frameBorder="0" class="giphy-embed" allowFullScreen></iframe><p><a href="https://giphy.com/gifs/waiting-loading-load-ycfHiJV6WZnQDFjSWH">via GIPHY</a></p>'); // Set loading state
+    
+  //   if(!promptValue){
+  //     Swal.fire({
+  //       title: "Error",
+  //       text: "Please give proper prompt!",
+  //       icon: "error"
+  //     });
+  //     return;
+  //   }
+
+  // setIsSubmitting(true); // Disable the button and Enter key
+  // console.log(promptValue);
+  // setCompletion(
+  //   '<iframe src="https://giphy.com/embed/ycfHiJV6WZnQDFjSWH" width="480" height="480" style="" frameBorder="0" class="giphy-embed" allowFullScreen></iframe><p><a href="https://giphy.com/gifs/waiting-loading-load-ycfHiJV6WZnQDFjSWH">via GIPHY</a></p>'
+  // ); // Set loading state
+
+
+  //     fetch(`${BASE_URL}/submitPrompt`, {
+  //       method: 'POST',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       },
+  //       body: JSON.stringify({ prompt: promptValue, user: 'user' }), // Adjust this if you add user selection
+  //     })
+  //     .then((response) => response.json())
+  //     .then((data) => {
+  //       console.log('Completion:', data.completion);
+  //       setCompletion(convertString(data.completion)); // Update the completion text
+  //       promptInput.value = ""; 
+  //       updateTable(); // Update table or other UI elements
+  //     })
+  //     .catch((error) => {
+  //       console.error('Error:', error);
+  //       setCompletion('Error processing the request.');
+  //     })
+  //     .finally(() => {
+  //       setIsSubmitting(false); // Re-enable the button and Enter key
+  //     });
+  // };
 
 
 /******************************** */
@@ -659,6 +834,8 @@ function Home() {
         document.getElementById('save_status').innerHTML = `Upload Status ${data.status} - FileID: ${data.file_id}`;
       });
   }
+
+  
       
   return (
     <div className=" h-screen w-full flex items-center justify-center overflow-hidden">
@@ -692,7 +869,12 @@ function Home() {
                           onChange={(e) => setSuffix(e.target.value)}
                       />
                   </ModalBody>
-                  <ModalFooter>
+                  <ModalFooter className="flex gap-4">
+                      {suffixError && (
+                        <p className="text-red-500 text-base">
+                          {suffixError} {/* Display the error message */}
+                        </p>
+                      )}
                       <Button type="button" value="SAVE" className="bg-slate-700" onClick={save}>
                           Save
                       </Button>{' '}
@@ -730,7 +912,8 @@ function Home() {
                     onChange={(e) => setSuffix(e.target.value)}
                 />
             </ModalBody>
-            <ModalFooter>
+            <ModalFooter className="flex gap:4">
+                <p className="text-red text-lg">{suffixError}</p>
                 <Button type="button" value="SAVE"  className="bg-slate-700" onClick={save}>
                     Save
                 </Button>{' '}
@@ -875,7 +1058,10 @@ function Home() {
                           onChange={(e) => setSystem(e.target.value)} // Update state on input change
                       />
                   </ModalBody>
-                  <ModalFooter>
+                  <ModalFooter className="flex gap-4">
+                      {systemError && (
+                        <p className="text-[red] text-base">{systemError}</p>
+                      )}
                       <Button type="button" value="Subit System" className="bg-slate-700" onClick={submitSystem}>
                           Submit System
                       </Button>{' '}
@@ -889,7 +1075,8 @@ function Home() {
               <div className="flex items-center gap-10">
                   <button 
                     type="Button" 
-                    value="Refresh" 
+                    value="Refresh"
+                    title="Refresh"
                     onClick={refresh}>
                     <i className="ri-refresh-line xl:text-xl 2xl:text-2xl cursor-pointer hover:text-xl text-slate-300"></i>
                   </button>
@@ -943,7 +1130,11 @@ function Home() {
           </table>
                 <div className="hidden" dangerouslySetInnerHTML={{ __html: completion }} />
           </div>
-                  
+
+          {promptError && (
+            <p className="text-[white] text-[lg] mb-2 text-center">{promptError}</p>
+          )}
+
           <div className="flex items-center justify-center gap-2 ">
               {/* <Input
                   className="mb-3 w-1/12 bg-zinc-600 text-zinc-200"
