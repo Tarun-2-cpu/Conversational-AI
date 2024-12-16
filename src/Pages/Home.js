@@ -680,8 +680,7 @@ function Home() {
 
   setIsSubmitting(true); // Disable the button and Enter key
   console.log(promptValue);
-  promptInput.value = "";
-
+  
    // Add the user's prompt to the chat immediately
    setTableData((prevTableData) => [
     ...prevTableData,
@@ -695,6 +694,15 @@ function Home() {
       </td>
     </tr>,
   ]);
+
+  setTimeout(() => {
+    if (lastRowRef.current) {
+      lastRowRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, 100); // Ensure smooth scrolling after DOM updates
+
+  promptInput.value = "";
+
 
   setCompletion(
     '<iframe src="https://giphy.com/embed/ycfHiJV6WZnQDFjSWH" width="480" height="480" style="" frameBorder="0" class="giphy-embed" allowFullScreen></iframe><p><a href="https://giphy.com/gifs/waiting-loading-load-ycfHiJV6WZnQDFjSWH">via GIPHY</a></p>'
