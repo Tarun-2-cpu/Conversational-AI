@@ -47,7 +47,8 @@ function Home() {
   const [suffixError,setSuffixError] = useState('')
   const [systemError,setSystemError] = useState('')
   const [promptError,setPromptError] = useState('')
-
+  const [needsTableUpdate, setNeedsTableUpdate] = useState(false);
+  const [initialLoad, setInitialLoad] = useState(true);
 
   const toggle = () => setDropdownOpen(!dropdownOpen);
   // const [dropdown2Open, setDropdown2Open] = useState(false);
@@ -63,7 +64,11 @@ function Home() {
   useEffect(() => {
     console.log("Selected Folder Updated:", selectedFolder);
 
-    updateTable();
+    if (needsTableUpdate  || initialLoad) {
+      updateTable();
+      setInitialLoad(false)
+      setNeedsTableUpdate(false); // Reset trigger after update
+    }
     updateStored();
 
     const input = document.getElementById("prompt");
@@ -82,7 +87,7 @@ function Home() {
     return () => {
       input.removeEventListener("keydown", handleEnterKey);
     };
-  }, [completion, refreshKey, isSubmitting, selectedFolder,tableData]);
+  }, [completion, refreshKey, isSubmitting, selectedFolder,needsTableUpdate,initialLoad]);
 
   // real
 
@@ -425,8 +430,6 @@ function Home() {
 
 
 
-      
-
   // const updateStored = () => {
   //   fetch(`${BASE_URL}/getStored`)
   //   .then((response) => response.json())
@@ -682,8 +685,8 @@ function Home() {
    // Add the user's prompt to the chat immediately
    setTableData((prevTableData) => [
     ...prevTableData,
-    <tr key={prevTableData.length} className="max-w-[60%] self-start">
-      <td className="relative xl:p-4 xl:py-3 2xl:p-4 mt-4 mb-4 rounded-[20px] bg-black text-slate-300 shadow-[0px_54px_20px_rgba(0,0,0,0.3)] rounded-[20px] text-left font-semibold">
+    <tr key={prevTableData.length} className="max-w-[60%] self-end">
+      <td className="relative xl:p-4 xl:py-3 2xl:p-4 mt-4 mb-4  bg-slate-300 text-[#212121] shadow-[0px_54px_20px_rgba(0,0,0,0.3)] rounded-[20px] text-left italic xl:text-lg 2xl:text-xl">
         <div
           dangerouslySetInnerHTML={{
             __html: promptValue.replace(/\n/g, "<br>"),
@@ -693,50 +696,45 @@ function Home() {
     </tr>,
   ]);
 
-
-
-
-
-
   setCompletion(
     '<iframe src="https://giphy.com/embed/ycfHiJV6WZnQDFjSWH" width="480" height="480" style="" frameBorder="0" class="giphy-embed" allowFullScreen></iframe><p><a href="https://giphy.com/gifs/waiting-loading-load-ycfHiJV6WZnQDFjSWH">via GIPHY</a></p>'
   ); // Set loading state
 
 
-      fetch(`${BASE_URL}/submitPrompt`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ prompt: promptValue, user: 'user' }), // Adjust this if you add user selection
-      })
-      .then((response) => response.json())
-      .then((data) => {
-        console.log('Completion:', data.completion);
-        
-         // Add the completion response to the chat
-        setTableData((prevTableData) => [
-          ...prevTableData,
-          <tr key={prevTableData.length + 1} className="max-w-[60%] self-end">
-            <td className="relative xl:p-4 xl:py-3 2xl:p-4 mt-4 mb-4 rounded-[20px] bg-slate-300 text-[#212121] shadow-[0px_54px_20px_rgba(0,0,0,0.3)] rounded-[20px] text-left italic">
-              <div
-                dangerouslySetInnerHTML={{
-                  __html: convertString(data.completion).replace(/\n/g, "<br>"),
-                }}
-              />
-            </td>
-          </tr>,
-        ]);
-        setCompletion(convertString(data.completion)); // Update the completion text
-        updateTable(); // Update table or other UI elements
-      })
-      .catch((error) => {
-        console.error('Error:', error);
-        setCompletion('Error processing the request.');
-      })
-      .finally(() => {
-        setIsSubmitting(false); // Re-enable the button and Enter key
-      });
+  fetch(`${BASE_URL}/submitPrompt`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ prompt: promptValue, user: 'user' }), // Adjust this if you add user selection
+  })
+  .then((response) => response.json())
+  .then((data) => {
+    console.log('Completion:', data.completion);
+    
+      // Add the completion response to the chat
+    setTableData((prevTableData) => [
+      ...prevTableData,
+      <tr key={prevTableData.length + 1} className="max-w-[60%] self-end">
+        <td className="relative xl:p-4 xl:py-3 2xl:p-4 mt-4 mb-4 rounded-[20px] bg-slate-300 text-[#212121] shadow-[0px_54px_20px_rgba(0,0,0,0.3)] rounded-[20px] text-left italic">
+          <div
+            dangerouslySetInnerHTML={{
+              __html: convertString(data.completion).replace(/\n/g, "<br>"),
+            }}
+          />
+        </td>
+      </tr>,
+    ]);
+    setCompletion(convertString(data.completion)); // Update the completion text
+    setNeedsTableUpdate(true);
+  })
+  .catch((error) => {
+    console.error('Error:', error);
+    setCompletion('Error processing the request.');
+  })
+  .finally(() => {
+    setIsSubmitting(false); // Re-enable the button and Enter key
+  });
   };
   
   
